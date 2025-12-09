@@ -1,36 +1,41 @@
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+export const config = {
+  runtime: "edge",
+};
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
+export default async function handler(req) {
   try {
-    const { amount } = req.body;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+    // Edge runtime requires manual JSON parsing
+    const { amount } = await req.json();
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
             currency: "gbp",
             product_data: { name: "Due Payment" },
-            unit_amount: Number(amount) * 100
+            unit_amount: Number(amount) * 100,
           },
-          quantity: 1
-        }
+          quantity: 1,
+        },
       ],
-      success_url: `${req.headers.origin}/success.html`,
-      cancel_url: `${req.headers.origin}/dashboard.html`
+      success_url: `${req.headers.get("origin")}/success.html`,
+      cancel_url: `${req.headers.get("origin")}/dashboard.html`,
     });
 
-    res.status(200).json({ url: session.url });
+    return new Response(JSON.stringify({ url: session.url }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
 
   } catch (err) {
-    console.error("Stripe Error:", err);
-    res.status(500).json({ error: err.message });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
