@@ -1,14 +1,14 @@
 import Stripe from "stripe";
 
-export const config = {
-  runtime: "edge"
-};
+export default async function handler(req, res) {
+  // Only allow POST requests
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-export default async function handler(req) {
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-    const { amount } = await req.json();
+    const { amount } = req.body;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -22,18 +22,13 @@ export default async function handler(req) {
           quantity: 1
         }
       ],
-      success_url: `${req.headers.get("origin")}/success.html`,
-      cancel_url: `${req.headers.get("origin")}/dashboard.html`
+      success_url: `${req.headers.origin}/success.html`,
+      cancel_url: `${req.headers.origin}/dashboard.html`
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" }
-    });
+    return res.status(200).json({ url: session.url });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    console.error("Stripe error:", err);
+    return res.status(500).json({ error: err.message });
   }
 }
