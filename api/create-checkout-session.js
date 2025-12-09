@@ -1,64 +1,39 @@
-// DO NOT use import/require - Vercel handles Stripe automatically
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+import Stripe from "stripe";
 
-module.exports = async function handler(req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+export const config = {
+  runtime: "edge"
+};
 
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
+export default async function handler(req) {
   try {
-    // Validate Stripe key exists
-    if (!process.env.STRIPE_SECRET_KEY) {
-      console.error("STRIPE_SECRET_KEY is missing");
-      return res.status(500).json({ error: "Server configuration error" });
-    }
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    const { amount } = req.body;
+    const { amount } = await req.json();
 
-    // Validate amount
-    if (!amount || isNaN(amount) || amount <= 0) {
-      return res.status(400).json({ error: "Invalid amount" });
-    }
-
-    console.log(`Creating session for amount: ${amount}`);
-
-    // Create checkout session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       mode: "payment",
       line_items: [
         {
           price_data: {
             currency: "gbp",
-            product_data: {
-              name: "Due Payment",
-              description: "Payment processing"
-            },
-            unit_amount: Math.round(Number(amount) * 100), // Convert to pence
+            product_data: { name: "Due Payment" },
+            unit_amount: Number(amount) * 100
           },
-          quantity: 1,
+          quantity: 1
         }
       ],
-      success_url: `${req.headers.origin || req.headers.referer || 'http://localhost:3000'}/success.html`,
-      cancel_url: `${req.headers.origin || req.headers.referer || 'http://localhost:3000'}/dashboard.html`,
+      success_url: `${req.headers.get("origin")}/success.html`,
+      cancel_url: `${req.headers.get("origin")}/dashboard.html`
     });
 
-    console.log("Session created successfully:", session.id);
-    return res.status(200).json({ url: session.url });
-
+    return new Response(JSON.stringify({ url: session.url }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (err) {
-    console.error('Stripe error:', err.message);
-    return res.status(500).json({ error: err.message || "Internal server error" });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
-};
+}
