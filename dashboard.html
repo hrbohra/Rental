@@ -1,9 +1,815 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard</title><link rel="stylesheet" href="style.css"></head>
-<body><div class="dashboard"><h1>Your Dues</h1><ul>
-<li><button class="payBtn" data-amount="3000">Due 1 - 3000 GBP</button></li>
-<li><button class="payBtn" data-amount="3000">Due 2 - 3000 GBP</button></li>
-<li><button class="payBtn" data-amount="3000">Due 3 - 3000 GBP</button></li>
-<li><button class="payBtn" data-amount="3000">Due 4 - 3000 GBP</button></li>
-</ul></div><script src="dashboard.js"></script></body></html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen Garden - Payment Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --gray: #64748b;
+            --light-gray: #f1f5f9;
+            --border: #e2e8f0;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo::before {
+            content: "🧘";
+            font-size: 1.8rem;
+        }
+
+        nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        nav a:hover {
+            color: var(--primary);
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--light-gray);
+            border-radius: 50px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        /* Stats Cards */
+        .stats-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon.primary {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary);
+        }
+
+        .stat-icon.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--secondary);
+        }
+
+        .stat-icon.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Payment Cards Section */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: white;
+            color: var(--primary);
+        }
+
+        .payment-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .payment-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s;
+            border-left: 4px solid var(--primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .payment-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, transparent 0%, rgba(37, 99, 235, 0.05) 100%);
+            border-radius: 0 0 0 100px;
+        }
+
+        .payment-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .payment-card.urgent {
+            border-left-color: var(--danger);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .status-badge.urgent {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .card-details {
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: var(--gray);
+            font-size: 0.875rem;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .pay-button {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .pay-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .pay-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .pay-button::after {
+            content: '→';
+            transition: transform 0.3s;
+        }
+
+        .pay-button:hover:not(:disabled)::after {
+            transform: translateX(4px);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Summary Section */
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            grid-column: 1 / -1;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--light-gray);
+            border-radius: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            nav {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .payment-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 0 1rem;
+                margin: 2rem auto;
+            }
+        }
+
+        /* Login Page Styles */
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header h2 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header p {
+            color: var(--gray);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* Success Page */
+        .success-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .success-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 3rem;
+        }
+
+        .success-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .success-message {
+            color: var(--gray);
+            margin-bottom: 2rem;
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Dashboard View -->
+    <div id="dashboardView">
+        <header>
+            <div class="header-content">
+                <div class="logo">Zen Garden</div>
+                <nav>
+                    <a href="#overview">Overview</a>
+                    <a href="#payments">Payments</a>
+                    <a href="#history">History</a>
+                </nav>
+                <div class="user-info">
+                    <div class="user-avatar">AH</div>
+                    <span>Ali Hatem</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="dashboard-grid">
+                <!-- Stats Cards -->
+                <div class="stats-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-value">£12,000</div>
+                            <div class="stat-label">Total Outstanding</div>
+                        </div>
+                        <div class="stat-icon primary">💰</div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-value">4</div>
+                            <div class="stat-label">Pending Payments</div>
+                        </div>
+                        <div class="stat-icon warning">⏰</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Cards Section -->
+            <div class="section-header">
+                <h2 class="section-title">Outstanding Payments</h2>
+                <div class="filter-buttons">
+                    <button class="filter-btn active">All</button>
+                    <button class="filter-btn">Urgent</button>
+                    <button class="filter-btn">Pending</button>
+                </div>
+            </div>
+
+            <div class="payment-cards">
+                <!-- Payment Card 1 -->
+                <div class="payment-card urgent">
+                    <div class="card-header">
+                        <h3 class="card-title">December</h3>
+                        <span class="status-badge urgent">Urgent</span>
+                    </div>
+                    <div class="card-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Due Date</span>
+                            <span class="detail-value">Dec 15, 2025</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Reference</span>
+                            <span class="detail-value">INV-2024-001</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Amount</span>
+                            <span class="amount">£3,000</span>
+                        </div>
+                    </div>
+                    <button class="pay-button payBtn" data-amount="3000">
+                        Pay Now
+                    </button>
+                </div>
+
+                <!-- Payment Card 2 -->
+                <div class="payment-card">
+                    <div class="card-header">
+                        <h3 class="card-title">February</h3>
+                        <span class="status-badge pending">Pending</span>
+                    </div>
+                    <div class="card-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Due Date</span>
+                            <span class="detail-value">Dec 20, 2025</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Reference</span>
+                            <span class="detail-value">INV-2024-002</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Amount</span>
+                            <span class="amount">£3,000</span>
+                        </div>
+                    </div>
+                    <button class="pay-button payBtn" data-amount="3000">
+                        Pay Now
+                    </button>
+                </div>
+
+                <!-- Payment Card 3 -->
+                <div class="payment-card">
+                    <div class="card-header">
+                        <h3 class="card-title">April</h3>
+                        <span class="status-badge pending">Pending</span>
+                    </div>
+                    <div class="card-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Due Date</span>
+                            <span class="detail-value">Dec 25, 2025</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Reference</span>
+                            <span class="detail-value">INV-2024-003</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Amount</span>
+                            <span class="amount">£3,000</span>
+                        </div>
+                    </div>
+                    <button class="pay-button payBtn" data-amount="3000">
+                        Pay Now
+                    </button>
+                </div>
+
+                <!-- Payment Card 4 -->
+                <div class="payment-card">
+                    <div class="card-header">
+                        <h3 class="card-title">June</h3>
+                        <span class="status-badge pending">Pending</span>
+                    </div>
+                    <div class="card-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Due Date</span>
+                            <span class="detail-value">Dec 30, 2025</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Reference</span>
+                            <span class="detail-value">INV-2024-004</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Amount</span>
+                            <span class="amount">£3,000</span>
+                        </div>
+                    </div>
+                    <button class="pay-button payBtn" data-amount="3000">
+                        Pay Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="summary-card">
+                <h3>Payment Summary</h3>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="stat-label">This Month</div>
+                        <div class="stat-value" style="font-size: 1.5rem;">£12,000</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="stat-label">Next Due</div>
+                        <div class="stat-value" style="font-size: 1.5rem;">Dec 15</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="stat-label">Total Items</div>
+                        <div class="stat-value" style="font-size: 1.5rem;">4</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll(".payBtn").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                const amount = btn.getAttribute("data-amount");
+                
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Processing...';
+
+                try {
+                    const response = await fetch("/api/create-checkout-session", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ amount: Number(amount) })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.url) {
+                        window.location.href = data.url;
+                    } else {
+                        alert(`Error: ${data.error || 'Unable to start checkout'}`);
+                        btn.disabled = false;
+                        btn.innerHTML = 'Pay Now';
+                    }
+                } catch (error) {
+                    console.error("Request failed:", error);
+                    alert(`Network error: ${error.message}`);
+                    btn.disabled = false;
+                    btn.innerHTML = 'Pay Now';
+                }
+            });
+        });
+
+        // Filter buttons functionality
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const filter = this.textContent.toLowerCase();
+                document.querySelectorAll('.payment-card').forEach(card => {
+                    if (filter === 'all') {
+                        card.style.display = 'block';
+                    } else if (filter === 'urgent' && card.classList.contains('urgent')) {
+                        card.style.display = 'block';
+                    } else if (filter === 'pending' && !card.classList.contains('urgent')) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
