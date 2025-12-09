@@ -4,58 +4,57 @@ document.querySelectorAll(".payBtn").forEach((btn) => {
     
     // Disable button during request
     btn.disabled = true;
+    const originalText = btn.textContent;
     btn.textContent = "Processing...";
 
     try {
+      console.log('Sending request to:', '/api/create-checkout-session');
+      console.log('Amount:', amount);
+
       const response = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount })
+        body: JSON.stringify({ amount: Number(amount) })
       });
 
-      // Get response text first to handle both JSON and HTML responses
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      // Get response text first
       const responseText = await response.text();
-      
-      // Log the actual response for debugging
-      console.log("Response status:", response.status);
-      console.log("Response body:", responseText);
+      console.log('Response body:', responseText);
 
       // Try to parse as JSON
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
-        console.error("Failed to parse response as JSON:", parseError);
-        console.error("Raw response:", responseText);
-        alert("Server returned an invalid response. Check the console for details.");
+        console.error("Failed to parse JSON:", parseError);
+        alert(`Server returned invalid response. Status: ${response.status}\n\nResponse: ${responseText.substring(0, 200)}`);
         btn.disabled = false;
-        btn.textContent = btn.getAttribute("data-original-text");
+        btn.textContent = originalText;
         return;
       }
 
-      // Handle the JSON response
+      // Handle the response
       if (response.ok && data.url) {
+        console.log('Redirecting to:', data.url);
         window.location.href = data.url;
       } else if (data.error) {
         alert(`Error: ${data.error}`);
         btn.disabled = false;
-        btn.textContent = btn.getAttribute("data-original-text");
+        btn.textContent = originalText;
       } else {
         alert("Unable to start checkout session.");
         btn.disabled = false;
-        btn.textContent = btn.getAttribute("data-original-text");
+        btn.textContent = originalText;
       }
 
     } catch (error) {
       console.error("Request failed:", error);
-      alert("Network error. Please check your connection and try again.");
+      alert(`Network error: ${error.message}\n\nCheck the console for details.`);
       btn.disabled = false;
-      btn.textContent = btn.getAttribute("data-original-text");
+      btn.textContent = originalText;
     }
   });
-});
-
-// Store original button text
-document.querySelectorAll(".payBtn").forEach((btn) => {
-  btn.setAttribute("data-original-text", btn.textContent);
 });
